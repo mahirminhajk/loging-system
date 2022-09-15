@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 //const encrypt = require('mongoose-encryption');
 const md5 = require('md5');//md5
 
+
 const app = express()
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
