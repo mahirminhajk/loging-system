@@ -14,7 +14,7 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 //passport
 app.use(session({
-    secret: "My secert is not your secert.",
+    secret: process.env.SECRET,
     resave: false,
     saveUninitialized: false
 }))
@@ -46,11 +46,49 @@ app.get('/register', (req, res) => {
     res.render('register');
 });
 
+app.get('/secrets', (req, res) => {
+    if (req.isAuthenticated()) {
+        res.render("secrets");
+    } else {
+        res.redirect('/login');
+    }
+});
+
+app.get('/logout', (req, res) => {
+    req.logout((err) => {
+        if (err) { return next(err) }
+        res.redirect('/');
+    });
+});
+
 app.post('/register', (req, res) => {
+    User.register({ username: req.body.username }, req.body.password, (err, user) => {
+        if (err) {
+            console.log(err);
+            res.redirect('/register');
+        } else {
+            passport.authenticate("local")(req, res, () => {
+                res.redirect("/secrets");
+            })
+        }
+    });
 
 });
 
 app.post('/login', (req, res) => {
+    const user = new User({
+        username: req.body.username,
+        password: req.body.password
+    })
+    //passport
+    req.login(user, (err) => {
+        if (err) console.log(err);
+        else {
+            passport.authenticate("local")(req, res, () => {
+                res.redirect('/secrets');
+            });
+        }
+    })
 
 });
 
