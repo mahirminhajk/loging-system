@@ -7,6 +7,7 @@ const session = require('express-session') //passport
 const passport = require('passport')
 const passportLocalMongoose = require('passport-local-mongoose')
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const FacebookStrategy = require('passport-facebook').Strategy;
 const findOrCreate = require('mongoose-findorcreate')
 
 const app = express()
@@ -49,6 +50,7 @@ passport.deserializeUser(function (user, cb) {
         return cb(null, user);
     });
 });
+//*google
 passport.use(new GoogleStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
@@ -62,11 +64,26 @@ passport.use(new GoogleStrategy({
         });
     }
 ));
+//*end
+//**facebook
+passport.use(new FacebookStrategy({
+    clientID: FACEBOOK_APP_ID,//add this
+    clientSecret: FACEBOOK_APP_SECRET,//add this
+    callbackURL: "http://localhost:3000/auth/facebook/secrets"
+},
+    function (accessToken, refreshToken, profile, cb) {
+        User.findOrCreate({ facebookId: profile.id }, function (err, user) {
+            return cb(err, user);
+        });
+    }
+));
+//**end
 
 app.get('/', (req, res) => {
     res.render('home');
 });
 
+//*google
 app.get('/auth/google',
     passport.authenticate('google', { scope: ['profile'] }));
 
@@ -77,6 +94,20 @@ app.get('/auth/google/secrets',
         // Successful authentication, redirect home.
         res.redirect('/secrets');
     });
+//*end
+
+//**facebook
+app.get('/auth/facebook',
+    passport.authenticate('facebook'));//add scope here(if needed)
+
+app.get('/auth/facebook/secrets',
+    passport.authenticate('facebook', { failureRedirect: '/login' }),
+    function (req, res) {
+        // Successful authentication, redirect home.
+        res.redirect('/secrets');
+    });
+//**end
+
 
 app.get('/login', (req, res) => {
     res.render('login');
@@ -87,11 +118,6 @@ app.get('/register', (req, res) => {
 });
 
 app.get('/secrets', (req, res) => {
-    // if (req.isAuthenticated()) {
-    //     res.render("secrets");
-    // } else {
-    //     res.redirect('/login');
-    // }
     User.find({ "secret": { $ne: null } }, (err, foundUser) => {
         if (!err) {
             if (foundUser) {
