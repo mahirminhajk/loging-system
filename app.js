@@ -29,7 +29,8 @@ const userSchema = new mongoose.Schema({
     email: String,
     password: String,
     googleId: String,
-    secret: String
+    secret: String,
+    facebookId: String
 });
 userSchema.plugin(passportLocalMongoose)
 userSchema.plugin(findOrCreate)
@@ -40,8 +41,7 @@ passport.serializeUser(function (user, cb) {
     process.nextTick(function () {
         return cb(null, {
             id: user.id,
-            username: user.username,
-            picture: user.picture
+            username: user.displayName
         });
     });
 });
@@ -52,13 +52,12 @@ passport.deserializeUser(function (user, cb) {
 });
 //*google
 passport.use(new GoogleStrategy({
-    clientID: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: "http://localhost:3000/auth/google/secrets",
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
 },
     function (accessToken, refreshToken, profile, cb) {
-        //console.log(profile);
         User.findOrCreate({ googleId: profile.id }, function (err, user) {
             return cb(err, user);
         });
@@ -67,12 +66,12 @@ passport.use(new GoogleStrategy({
 //*end
 //**facebook
 passport.use(new FacebookStrategy({
-    clientID: FACEBOOK_APP_ID,//add this
-    clientSecret: FACEBOOK_APP_SECRET,//add this
+    clientID: process.env.FACEBOOK_APP_ID,
+    clientSecret: process.env.FACEBOOK_APP_SECRET,
     callbackURL: "http://localhost:3000/auth/facebook/secrets"
 },
     function (accessToken, refreshToken, profile, cb) {
-        User.findOrCreate({ facebookId: profile.id }, function (err, user) {
+        User.findOrCreate({ facebookId: profile.id, }, function (err, user) {
             return cb(err, user);
         });
     }
